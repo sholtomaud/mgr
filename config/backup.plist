@@ -1,22 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<array>
-    <!-- Example backup mapping. Edit to match your drives.
-    <dict>
-        <key>name</key>
-        <string>home</string>
-        <key>source</key>
-        <string>~/</string>
-        <key>destination</key>
-        <string>/Volumes/Backup/home</string>
-        <key>excludes</key>
-        <array>
-            <string>.Trash</string>
-            <string>Library/Caches</string>
-            <string>.build</string>
-        </array>
-    </dict>
-    -->
-</array>
+<dict>
+    <!-- Base directory for timestamped snapshots. Each run creates a subdir. -->
+    <key>snapshotBase</key>
+    <string>~/Backups/mgr</string>
+
+    <!-- Excludes applied to every rsync invocation -->
+    <key>globalExcludes</key>
+    <array>
+        <string>.DS_Store</string>
+        <string>*.tmp</string>
+        <string>*.swp</string>
+        <string>node_modules/</string>
+        <string>.git/</string>
+        <string>*.pyc</string>
+    </array>
+
+    <!-- Sources to back up. Each entry produces one rsync invocation per run. -->
+    <key>sources</key>
+    <array>
+        <!--
+        <dict>
+            <key>path</key>     <string>~/Documents</string>
+            <key>excludes</key> <array/>
+        </dict>
+        <dict>
+            <key>path</key>     <string>~/Development</string>
+            <key>excludes</key>
+            <array>
+                <string>.build/</string>
+                <string>*.o</string>
+            </array>
+        </dict>
+        -->
+    </array>
+</dict>
 </plist>
