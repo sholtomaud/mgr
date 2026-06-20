@@ -1,4 +1,5 @@
 import Foundation
+import mgrLib
 
 // mgr — personal macOS management CLI
 // Usage: mgr <command> [subcommand] [flags]

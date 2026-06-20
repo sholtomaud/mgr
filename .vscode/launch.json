@@ -1,0 +1,49 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug mgr help",
+      "program": "${workspaceFolder}/.build/debug/mgr",
+      "args": ["help"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "swift build"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug mgr doctor",
+      "program": "${workspaceFolder}/.build/debug/mgr",
+      "args": ["doctor", "--verbose"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "swift build"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug mgr bootstrap system",
+      "program": "${workspaceFolder}/.build/debug/mgr",
+      "args": ["bootstrap", "system", "--verbose"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "swift build"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug mgr (custom args)",
+      "program": "${workspaceFolder}/.build/debug/mgr",
+      "args": ["${input:mgrArgs}"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "swift build"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "mgrArgs",
+      "type": "promptString",
+      "description": "Arguments to pass to mgr (space-separated)",
+      "default": "help"
+    }
+  ]
+}

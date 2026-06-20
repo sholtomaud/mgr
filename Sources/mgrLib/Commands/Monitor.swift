@@ -1,7 +1,7 @@
 import Foundation
 
-enum Monitor {
-    static func run(args: [String]) {
+public enum Monitor {
+    public static func run(args: [String]) {
         if args.contains("--start") {
             Logger.info("monitor: start — not yet implemented")
         } else if args.contains("--stop") {
