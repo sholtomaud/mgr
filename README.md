@@ -20,9 +20,14 @@ mgr update      # update mgr itself or pinned container image digests
 curl -fsSL https://github.com/sholtomaud/mgr/releases/latest/download/install.sh | sh
 ```
 
-`install.sh` verifies the Developer ID code signature before executing anything, then hands off to `mgr bootstrap`.
+Requires macOS 14 (Sonoma) or later.
 
-> **Note:** Requires macOS 14 (Sonoma) or later.
+> **v0.1.0 note:** The current release is unsigned (Developer ID certificate pending).
+> After install, clear the Gatekeeper quarantine flag once:
+> ```sh
+> xattr -d com.apple.quarantine /usr/local/bin/mgr
+> ```
+> Signed and notarized releases will lift this requirement.
 
 ## Usage
 
