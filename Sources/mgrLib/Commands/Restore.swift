@@ -1,7 +1,7 @@
 import Foundation
 
-enum Restore {
-    static func run(args: [String]) {
+public enum Restore {
+    public static func run(args: [String]) {
         if args.contains("--list") {
             Logger.info("restore: list snapshots — not yet implemented")
         } else {

@@ -1,13 +1,13 @@
 import Foundation
 
-enum Codesign {
-    struct Info {
-        let teamID: String?
-        let identifier: String?
-        let isValid: Bool
+public enum Codesign {
+    public struct Info {
+        public let teamID: String?
+        public let identifier: String?
+        public let isValid: Bool
     }
 
-    static func verify(path: String) -> Info {
+    public static func verify(path: String) -> Info {
         let result = Shell.run("/usr/bin/codesign", args: ["--verify", "--deep", "--strict", path])
         guard result.succeeded else {
             return Info(teamID: nil, identifier: nil, isValid: false)

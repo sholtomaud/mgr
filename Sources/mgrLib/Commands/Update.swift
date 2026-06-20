@@ -1,7 +1,7 @@
 import Foundation
 
-enum Update {
-    static func run(args: [String]) {
+public enum Update {
+    public static func run(args: [String]) {
         if args.contains("--check") {
             Logger.info("update: check — not yet implemented")
         } else if args.contains("--containers") {

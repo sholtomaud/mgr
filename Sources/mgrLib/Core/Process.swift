@@ -1,15 +1,15 @@
 import Foundation
 
-enum Shell {
-    struct Result {
-        let exitCode: Int32
-        let stdout: String
-        let stderr: String
-        var succeeded: Bool { exitCode == 0 }
+public enum Shell {
+    public struct Result {
+        public let exitCode: Int32
+        public let stdout: String
+        public let stderr: String
+        public var succeeded: Bool { exitCode == 0 }
     }
 
     @discardableResult
-    static func run(_ executable: String, args: [String] = [], env: [String: String]? = nil) -> Result {
+    public static func run(_ executable: String, args: [String] = [], env: [String: String]? = nil) -> Result {
         let process = Foundation.Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = args

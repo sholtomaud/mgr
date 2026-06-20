@@ -1,7 +1,7 @@
 import Foundation
 
-enum Bootstrap {
-    static func run(args: [String]) {
+public enum Bootstrap {
+    public static func run(args: [String]) {
         let sub = args.first ?? ""
         switch sub {
         case "system":    runSystem()

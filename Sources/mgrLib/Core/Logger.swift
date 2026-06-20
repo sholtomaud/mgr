@@ -1,23 +1,23 @@
 import Foundation
 
-enum Logger {
-    static var verbose = CommandLine.arguments.contains("--verbose")
+public enum Logger {
+    public static var verbose = CommandLine.arguments.contains("--verbose")
 
-    static func info(_ message: String) {
+    public static func info(_ message: String) {
         print("[mgr] \(message)")
     }
 
-    static func debug(_ message: String) {
+    public static func debug(_ message: String) {
         guard verbose else { return }
         print("[mgr:debug] \(message)")
     }
 
-    static func error(_ message: String) {
+    public static func error(_ message: String) {
         fputs("[mgr:error] \(message)\n", stderr)
     }
 
     // Writes a structured JSON line to ~/Library/Logs/mgr/<file>
-    static func log(to file: String, level: String = "info", message: String, extra: [String: String] = [:]) {
+    public static func log(to file: String, level: String = "info", message: String, extra: [String: String] = [:]) {
         let logDir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Logs/mgr")
         let logFile = logDir.appendingPathComponent(file)

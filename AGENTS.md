@@ -13,12 +13,13 @@ See [docs/spec.md](docs/spec.md) for the full architecture and functional requir
 1. **macOS-only.** Do not add Linux compatibility shims or conditional compilation for non-Apple platforms. The Apple API surface is the point.
 2. **No third-party Swift packages.** `Package.swift` must only declare targets; no external `.package(url:...)` dependencies. Use Apple frameworks only: Foundation, Security, ServiceManagement, UserNotifications.
 3. **No new files without a home.** Follow the established structure:
-   - `Sources/mgr/Commands/` — one file per subcommand
-   - `Sources/mgr/Core/` — shared helpers (Logger, Plist, Process/Shell, Codesign, Notify)
+   - `Sources/mgrLib/Commands/` — one file per subcommand (the library target, importable by tests)
+   - `Sources/mgrLib/Core/` — shared helpers (Logger, Plist, Process/Shell, Codesign, Notify)
+   - `Sources/mgr/main.swift` — thin executable entry point only; imports `mgrLib`
    - `config/` — plist configuration files
    - `launchd/` — launchd agent plist templates
    - `scripts/` — shell scripts (keep minimal; logic belongs in Swift)
-   - `Tests/mgrTests/` — XCTest cases
+   - `Tests/mgrTests/` — XCTest cases (imports `mgrLib`)
 4. **No comments explaining what code does.** Only add a comment when the WHY is non-obvious: a hidden constraint, a workaround for a specific macOS API quirk, or an invariant that would surprise a reader.
 5. **Idempotent operations.** Every `mgr` subcommand must be safely re-runnable. Operations that have already completed should report "already done" rather than failing or duplicating work.
 

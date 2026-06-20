@@ -3,8 +3,8 @@ import Foundation
 import UserNotifications
 #endif
 
-enum Notify {
-    static func send(title: String, body: String, identifier: String = UUID().uuidString) {
+public enum Notify {
+    public static func send(title: String, body: String, identifier: String = UUID().uuidString) {
         // UserNotifications requires a running app context — use osascript as fallback
         // for a CLI binary. Replace with UNUserNotificationCenter when running as a daemon.
         let script = """
