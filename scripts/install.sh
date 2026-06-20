@@ -50,9 +50,24 @@ else
     echo "  After install, run: xattr -d com.apple.quarantine ${INSTALL_DIR}/${BINARY}" >&2
 fi
 
-# Install
+# Install binary
 echo "Installing to ${INSTALL_DIR}/${BINARY}..."
 sudo mv "$TMP" "${INSTALL_DIR}/${BINARY}"
+
+# Download config templates (never overwrites existing files)
+CONFIG_DIR="${HOME}/.config/mgr"
+CONFIG_URL="https://github.com/${REPO}/releases/latest/download/config.zip"
+CONFIG_TMP=$(mktemp -d)
+echo "Downloading config templates..."
+if curl -fsSL "$CONFIG_URL" -o "${CONFIG_TMP}/config.zip" 2>/dev/null; then
+    mkdir -p "$CONFIG_DIR"
+    # -n: never overwrite existing files (preserves user edits on re-install)
+    unzip -n "${CONFIG_TMP}/config.zip" -d "$CONFIG_DIR" > /dev/null
+    echo "Config templates installed to ${CONFIG_DIR}"
+else
+    echo "Warning: could not download config templates. Run 'mgr bootstrap config' later." >&2
+fi
+rm -rf "$CONFIG_TMP"
 
 echo "mgr installed. Running bootstrap..."
 "${INSTALL_DIR}/${BINARY}" bootstrap

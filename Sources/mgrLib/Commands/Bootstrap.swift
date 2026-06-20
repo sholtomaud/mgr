@@ -30,32 +30,47 @@ public enum Bootstrap {
 
     static func runConfig() {
         let fm = FileManager.default
-        let destDir = fm.homeDirectoryForCurrentUser
+        let configDir = fm.homeDirectoryForCurrentUser
             .appendingPathComponent(".config/mgr")
-        try? fm.createDirectory(at: destDir, withIntermediateDirectories: true)
 
         let templates = ["approved.plist", "backup.plist", "system.plist",
                          "dotfiles.plist", "dev.plist", "containers.plist"]
 
-        // Locate the repo config/ dir — dev CWD or next to installed binary
-        let repoConfig = resolveRepoRoot() + "/config"
+        // If running from the repo root (dev), copy missing templates now
+        let repoConfig = "./config"
+        let runningFromRepo = fm.fileExists(atPath: repoConfig + "/backup.plist")
 
+        try? fm.createDirectory(at: configDir, withIntermediateDirectories: true)
+
+        var missing: [String] = []
         for name in templates {
-            let src  = repoConfig + "/" + name
-            let dest = destDir.appendingPathComponent(name).path
-            guard fm.fileExists(atPath: src) else { continue }
+            let dest = configDir.appendingPathComponent(name).path
             if fm.fileExists(atPath: dest) {
-                print("  ✓ ~/.config/mgr/\(name) (already exists — not overwritten)")
-            } else {
+                print("  ✓ ~/.config/mgr/\(name)")
+            } else if runningFromRepo,
+                      let src = Optional(repoConfig + "/" + name),
+                      fm.fileExists(atPath: src) {
                 do {
                     try fm.copyItem(atPath: src, toPath: dest)
-                    print("  ✓ ~/.config/mgr/\(name) (copied from template)")
+                    print("  ✓ ~/.config/mgr/\(name) (copied from repo)")
                 } catch {
-                    Logger.error("bootstrap/config: failed to copy \(name): \(error.localizedDescription)")
+                    Logger.error("bootstrap/config: \(name): \(error.localizedDescription)")
                 }
+            } else {
+                print("  ✗ ~/.config/mgr/\(name) (missing)")
+                missing.append(name)
             }
         }
-        print("bootstrap/config: done — edit ~/.config/mgr/ to customise")
+
+        if !missing.isEmpty {
+            print("")
+            print("Some config files are missing. They ship with the release as config.zip.")
+            print("Re-run the installer or download manually:")
+            print("  curl -fsSL https://github.com/sholtomaud/mgr/releases/latest/download/config.zip -o /tmp/config.zip")
+            print("  unzip -n /tmp/config.zip -d ~/.config/mgr/")
+        } else {
+            print("bootstrap/config: all present — edit ~/.config/mgr/ to customise")
+        }
     }
 
     // MARK: — system
