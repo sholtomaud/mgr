@@ -2,46 +2,47 @@ import Foundation
 
 public enum Backup {
     public static func run(args: [String]) {
-        let dryRun = args.contains("--dry-run")
-        let destOverride = flagValue(args, flag: "--destination")
-        let nameFilter = args.first(where: { !$0.hasPrefix("-") })
+        let dryRun      = args.contains("--dry-run")
+        let volumeOverride = flagValue(args, flag: "--volume")
+        let nameFilter  = args.first(where: { !$0.hasPrefix("-") })
 
-        let mappings = readConfig()
+        let config = readConfig()
 
-        guard !mappings.isEmpty else {
+        guard !config.mappings.isEmpty else {
             print("backup: no mappings configured in config/backup.plist — nothing to do")
-            print("  Add source/destination pairs to config/backup.plist to get started.")
+            print("  Uncomment and edit the example entries to get started.")
             return
         }
 
+        // Find which backup drive is mounted
+        let volumePath: String
+        if let override = volumeOverride {
+            volumePath = override
+        } else if let found = findVolume(pattern: config.volumePattern) {
+            volumePath = found
+        } else {
+            print("backup: no backup drive mounted (looking for /Volumes/\(config.volumePattern)*)")
+            print("  Plug in one of your backup drives and try again.")
+            return
+        }
+        print("backup: using drive \(volumePath)\(dryRun ? " (dry run)" : "")")
+
         let targets = nameFilter != nil
-            ? mappings.filter { $0.name == nameFilter }
-            : mappings
+            ? config.mappings.filter { $0.name == nameFilter }
+            : config.mappings
 
         if targets.isEmpty {
-            Logger.error("backup: no mapping named '\(nameFilter!)' — run 'mgr backup' to see all")
+            Logger.error("backup: no mapping named '\(nameFilter!)' — run 'mgr restore --list' to see all")
             exit(1)
         }
 
         let startDate = Date()
-        print("backup: starting\(dryRun ? " (dry run)" : "")")
-
         var anyFailure = false
 
         for mapping in targets {
             let src = (mapping.source as NSString).expandingTildeInPath
-            let dst = destOverride ?? mapping.destination
+            let dst = volumePath + "/" + mapping.destination
 
-            // Warn clearly if the destination drive isn't mounted
-            guard FileManager.default.fileExists(atPath: dst) ||
-                  FileManager.default.fileExists(atPath: (dst as NSString).deletingLastPathComponent) else {
-                Logger.error("backup: destination not reachable: \(dst)")
-                Logger.error("  Is the external drive mounted?")
-                anyFailure = true
-                continue
-            }
-
-            // Ensure destination directory exists
             if !dryRun {
                 try? FileManager.default.createDirectory(
                     atPath: dst, withIntermediateDirectories: true)
@@ -58,7 +59,6 @@ public enum Backup {
             let result = Shell.run("/usr/bin/rsync", args: rsyncArgs)
 
             if result.succeeded {
-                // Print the summary lines rsync produces (transferred, size, etc.)
                 let summary = result.stdout.components(separatedBy: "\n")
                     .filter { $0.hasPrefix("Number of") || $0.hasPrefix("Total") || $0.hasPrefix("Sent") }
                     .joined(separator: "\n")
@@ -71,7 +71,7 @@ public enum Backup {
         }
 
         let duration = String(format: "%.1f", Date().timeIntervalSince(startDate))
-        let status = anyFailure ? "partial" : "ok"
+        let status   = anyFailure ? "partial" : "ok"
 
         if !dryRun {
             Logger.log(
@@ -79,6 +79,7 @@ public enum Backup {
                 level: anyFailure ? "error" : "info",
                 message: "backup \(status)",
                 extra: [
+                    "volume":   volumePath,
                     "mappings": String(targets.count),
                     "duration": duration + "s",
                     "status":   status
@@ -86,23 +87,40 @@ public enum Backup {
             )
             Notify.send(
                 title: anyFailure ? "Backup partially failed" : "Backup complete",
-                body:  "\(targets.count) mapping(s) in \(duration)s"
+                body:  "\(targets.count) mapping(s) → \(volumePath) in \(duration)s"
             )
         }
 
         print("backup: \(status) (\(duration)s)")
     }
 
+    // MARK: — Volume discovery
+
+    public static func findVolume(pattern: String) -> String? {
+        let fm = FileManager.default
+        guard let entries = try? fm.contentsOfDirectory(atPath: "/Volumes") else { return nil }
+        return entries
+            .filter { $0.hasPrefix(pattern) }
+            .sorted()                          // deterministic: BACKUP1 before BACKUP2
+            .first
+            .map { "/Volumes/" + $0 }
+    }
+
     // MARK: — Config
+
+    public struct Config {
+        public let volumePattern: String
+        public let mappings:      [Mapping]
+    }
 
     public struct Mapping {
         public let name:        String
         public let source:      String
-        public let destination: String
+        public let destination: String   // relative to volume root
         public let excludes:    [String]
     }
 
-    public static func readConfig() -> [Mapping] {
+    public static func readConfig() -> Config {
         let paths = [
             "./config/backup.plist",
             FileManager.default.homeDirectoryForCurrentUser
@@ -112,16 +130,20 @@ public enum Backup {
             guard FileManager.default.fileExists(atPath: path),
                   let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
                   let obj  = try? PropertyListSerialization.propertyList(from: data, format: nil),
-                  let arr  = obj as? [[String: Any]] else { continue }
-            return arr.compactMap { entry -> Mapping? in
+                  let dict = obj as? [String: Any] else { continue }
+
+            let pattern  = dict["volumePattern"] as? String ?? "BACKUP"
+            let rawArr   = dict["mappings"] as? [[String: Any]] ?? []
+            let mappings = rawArr.compactMap { entry -> Mapping? in
                 guard let name = entry["name"]        as? String,
                       let src  = entry["source"]      as? String,
                       let dst  = entry["destination"] as? String else { return nil }
-                let excludes = entry["excludes"] as? [String] ?? []
-                return Mapping(name: name, source: src, destination: dst, excludes: excludes)
+                return Mapping(name: name, source: src, destination: dst,
+                               excludes: entry["excludes"] as? [String] ?? [])
             }
+            return Config(volumePattern: pattern, mappings: mappings)
         }
-        return []
+        return Config(volumePattern: "BACKUP", mappings: [])
     }
 
     // MARK: — Helpers

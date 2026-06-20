@@ -1,39 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<array>
-    <!-- Each entry mirrors a source directory to a destination on an external drive.
-         mgr backup runs: rsync -a --delete [excludes] <source>/ <destination>/
-         The destination is kept as an exact mirror — files deleted on source
-         are also deleted from the backup. Run `mgr backup --dry-run` to preview.
+<dict>
+    <!-- Prefix to match backup drive names under /Volumes/.
+         mgr backup scans /Volumes/ for any mounted drive whose name starts
+         with this string (e.g. BACKUP matches BACKUP1, BACKUP2, BACKUP-OLD).
+         The first match (alphabetical) is used. -->
+    <key>volumePattern</key>
+    <string>BACKUP</string>
 
-    <dict>
-        <key>name</key>        <string>home</string>
-        <key>source</key>      <string>~/</string>
-        <key>destination</key> <string>/Volumes/BackupSSD/home</string>
-        <key>excludes</key>
-        <array>
-            <string>.Trash</string>
-            <string>Library/Caches</string>
-            <string>Library/CloudStorage</string>
-            <string>.build</string>
-            <string>node_modules</string>
-            <string>*.tmp</string>
-            <string>.DS_Store</string>
-        </array>
-    </dict>
-    <dict>
-        <key>name</key>        <string>dev</string>
-        <key>source</key>      <string>~/Development</string>
-        <key>destination</key> <string>/Volumes/BackupSSD/Development</string>
-        <key>excludes</key>
-        <array>
-            <string>.build</string>
-            <string>*.o</string>
-            <string>node_modules</string>
-            <string>.DS_Store</string>
-        </array>
-    </dict>
-    -->
-</array>
+    <!-- Each mapping mirrors a source to a subdirectory on the backup volume.
+         destination is relative to the volume root — e.g. "home" resolves to
+         /Volumes/BACKUP1/home when BACKUP1 is the mounted drive. -->
+    <key>mappings</key>
+    <array>
+        <!--
+        <dict>
+            <key>name</key>        <string>home</string>
+            <key>source</key>      <string>~/</string>
+            <key>destination</key> <string>home</string>
+            <key>excludes</key>
+            <array>
+                <string>.Trash</string>
+                <string>Library/Caches</string>
+                <string>Library/CloudStorage</string>
+                <string>.build</string>
+                <string>node_modules</string>
+                <string>*.tmp</string>
+                <string>.DS_Store</string>
+            </array>
+        </dict>
+        <dict>
+            <key>name</key>        <string>dev</string>
+            <key>source</key>      <string>~/Development</string>
+            <key>destination</key> <string>Development</string>
+            <key>excludes</key>
+            <array>
+                <string>.build</string>
+                <string>*.o</string>
+                <string>node_modules</string>
+                <string>.DS_Store</string>
+            </array>
+        </dict>
+        -->
+    </array>
+</dict>
 </plist>
