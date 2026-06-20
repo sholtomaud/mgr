@@ -4,6 +4,7 @@ public enum Bootstrap {
     public static func run(args: [String]) {
         let sub = args.first ?? ""
         switch sub {
+        case "config":    runConfig()
         case "system":    runSystem()
         case "apps":      runApps()
         case "packages":  runPackages()
@@ -11,6 +12,7 @@ public enum Bootstrap {
         case "agents":    runAgents()
         case "dev":       runDev()
         case "":
+            runConfig()
             runSystem()
             runApps()
             runPackages()
@@ -22,6 +24,38 @@ public enum Bootstrap {
             fputs("Run 'mgr help bootstrap' for usage.\n", stderr)
             exit(1)
         }
+    }
+
+    // MARK: — config
+
+    static func runConfig() {
+        let fm = FileManager.default
+        let destDir = fm.homeDirectoryForCurrentUser
+            .appendingPathComponent(".config/mgr")
+        try? fm.createDirectory(at: destDir, withIntermediateDirectories: true)
+
+        let templates = ["approved.plist", "backup.plist", "system.plist",
+                         "dotfiles.plist", "dev.plist", "containers.plist"]
+
+        // Locate the repo config/ dir — dev CWD or next to installed binary
+        let repoConfig = resolveRepoRoot() + "/config"
+
+        for name in templates {
+            let src  = repoConfig + "/" + name
+            let dest = destDir.appendingPathComponent(name).path
+            guard fm.fileExists(atPath: src) else { continue }
+            if fm.fileExists(atPath: dest) {
+                print("  ✓ ~/.config/mgr/\(name) (already exists — not overwritten)")
+            } else {
+                do {
+                    try fm.copyItem(atPath: src, toPath: dest)
+                    print("  ✓ ~/.config/mgr/\(name) (copied from template)")
+                } catch {
+                    Logger.error("bootstrap/config: failed to copy \(name): \(error.localizedDescription)")
+                }
+            }
+        }
+        print("bootstrap/config: done — edit ~/.config/mgr/ to customise")
     }
 
     // MARK: — system

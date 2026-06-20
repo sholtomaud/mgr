@@ -2,11 +2,19 @@ import XCTest
 @testable import mgrLib
 
 final class BackupConfigTests: XCTestCase {
-    func testDefaultConfigHasNoBACKUPPatternAndNoMappings() {
+    func testDefaultConfigHasBACKUPPatternAndMappings() {
         let config = Backup.readConfig()
         XCTAssertEqual(config.volumePattern, "BACKUP")
-        XCTAssertEqual(config.mappings.count, 0,
-            "Default backup.plist should have 0 active mappings (all examples commented out)")
+        XCTAssertGreaterThan(config.mappings.count, 0,
+            "backup.plist should have active mappings populated from old script")
+        // Spot-check a few known mappings
+        XCTAssertTrue(config.mappings.contains { $0.name == "Documents" })
+        XCTAssertTrue(config.mappings.contains { $0.name == "Development" })
+        // Global excludes should be merged into each mapping
+        let dev = config.mappings.first { $0.name == "Development" }
+        XCTAssertNotNil(dev)
+        XCTAssertTrue(dev!.excludes.contains(".DS_Store"), "globalExcludes should be merged in")
+        XCTAssertTrue(dev!.excludes.contains(".build"),    "per-mapping excludes should be merged in")
     }
 
     func testMappingParsesAllFields() throws {
