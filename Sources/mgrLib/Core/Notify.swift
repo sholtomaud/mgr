@@ -1,16 +1,17 @@
 import Foundation
-#if canImport(UserNotifications)
-import UserNotifications
-#endif
 
 public enum Notify {
-    public static func send(title: String, body: String, identifier: String = UUID().uuidString) {
-        // UserNotifications requires a running app context — use osascript as fallback
-        // for a CLI binary. Replace with UNUserNotificationCenter when running as a daemon.
-        let script = """
-        display notification "\(body.replacingOccurrences(of: "\"", with: "'"))" \
-        with title "\(title.replacingOccurrences(of: "\"", with: "'"))"
-        """
+    // Set to true in tests to suppress osascript calls (which open UI in CI).
+    public static var suppressForTesting = false
+
+    // Sends a macOS notification via osascript — works in user-session LaunchAgents
+    // without requiring a bundle identifier or UNUserNotificationCenter authorization.
+    public static func send(title: String, body: String,
+                            identifier: String = UUID().uuidString) {
+        guard !suppressForTesting else { return }
+        let safeTitle = title.replacingOccurrences(of: "\"", with: "'")
+        let safeBody  = body.replacingOccurrences(of: "\"", with: "'")
+        let script = "display notification \"\(safeBody)\" with title \"\(safeTitle)\""
         Shell.run("/usr/bin/osascript", args: ["-e", script])
     }
 }
