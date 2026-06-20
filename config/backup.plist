@@ -3,46 +3,149 @@
 <plist version="1.0">
 <dict>
     <!-- Prefix to match backup drive names under /Volumes/.
-         mgr backup scans /Volumes/ for any mounted drive whose name starts
-         with this string (e.g. BACKUP matches BACKUP1, BACKUP2, BACKUP-OLD).
-         The first match (alphabetical) is used. -->
+         Matches BACKUP, BACKUP1, BACKUP2, BACKUP-OLD, etc. -->
     <key>volumePattern</key>
     <string>BACKUP</string>
 
-    <!-- Each mapping mirrors a source to a subdirectory on the backup volume.
-         destination is relative to the volume root — e.g. "home" resolves to
-         /Volumes/BACKUP1/home when BACKUP1 is the mounted drive. -->
+    <!-- Migrated from scripts/.backup.config BACKUP_PATHS.
+         destination is relative to the volume root under backups/
+         e.g. "backups/Documents" → /Volumes/BACKUP1/backups/Documents -->
     <key>mappings</key>
     <array>
-        <!--
         <dict>
-            <key>name</key>        <string>home</string>
-            <key>source</key>      <string>~/</string>
-            <key>destination</key> <string>home</string>
-            <key>excludes</key>
-            <array>
-                <string>.Trash</string>
-                <string>Library/Caches</string>
-                <string>Library/CloudStorage</string>
-                <string>.build</string>
-                <string>node_modules</string>
-                <string>*.tmp</string>
-                <string>.DS_Store</string>
-            </array>
+            <key>name</key>        <string>bib</string>
+            <key>source</key>      <string>~/bib</string>
+            <key>destination</key> <string>backups/bib</string>
+            <key>excludes</key>    <array/>
         </dict>
         <dict>
-            <key>name</key>        <string>dev</string>
+            <key>name</key>        <string>Config</string>
+            <key>source</key>      <string>~/Config</string>
+            <key>destination</key> <string>backups/Config</string>
+            <key>excludes</key>    <array/>
+        </dict>
+        <dict>
+            <key>name</key>        <string>Development</string>
             <key>source</key>      <string>~/Development</string>
-            <key>destination</key> <string>Development</string>
+            <key>destination</key> <string>backups/Development</string>
             <key>excludes</key>
             <array>
                 <string>.build</string>
-                <string>*.o</string>
-                <string>node_modules</string>
-                <string>.DS_Store</string>
+                <string>buildtree</string>
+                <string>buildtrees</string>
+                <string>.fingerprint</string>
+                <string>cdk.out</string>
+                <string>dist</string>
+                <string>build</string>
+                <string>platforms</string>
+                <string>plugins</string>
+                <string>emsdk</string>
             </array>
         </dict>
-        -->
+        <dict>
+            <key>name</key>        <string>Documents</string>
+            <key>source</key>      <string>~/Documents</string>
+            <key>destination</key> <string>backups/Documents</string>
+            <key>excludes</key>    <array/>
+        </dict>
+        <dict>
+            <key>name</key>        <string>brave</string>
+            <key>source</key>      <string>~/Library/Application Support/BraveSoftware/Brave-Browser</string>
+            <key>destination</key> <string>backups/Library/Application Support/BraveSoftware/Brave-Browser</string>
+            <key>excludes</key>
+            <array>
+                <string>Crashpad</string>
+                <string>GrShaderCache</string>
+                <string>Greaselion</string>
+            </array>
+        </dict>
+        <dict>
+            <key>name</key>        <string>Movies</string>
+            <key>source</key>      <string>~/Movies</string>
+            <key>destination</key> <string>backups/Movies</string>
+            <key>excludes</key>    <array/>
+        </dict>
+        <dict>
+            <key>name</key>        <string>Music</string>
+            <key>source</key>      <string>~/Music</string>
+            <key>destination</key> <string>backups/Music</string>
+            <key>excludes</key>    <array/>
+        </dict>
+        <dict>
+            <key>name</key>        <string>Pictures</string>
+            <key>source</key>      <string>~/Pictures</string>
+            <key>destination</key> <string>backups/Pictures</string>
+            <key>excludes</key>
+            <array>
+                <string>*.photoslibrary</string>
+                <string>.*.photolibrary</string>
+                <string>Photos Library.photoslibrary</string>
+                <string>iPhoto Library.photolibrary</string>
+            </array>
+        </dict>
+        <dict>
+            <key>name</key>        <string>Projects</string>
+            <key>source</key>      <string>~/Projects</string>
+            <key>destination</key> <string>backups/Projects</string>
+            <key>excludes</key>    <array/>
+        </dict>
+        <dict>
+            <key>name</key>        <string>UNSW_Phd</string>
+            <key>source</key>      <string>~/UNSW_Phd</string>
+            <key>destination</key> <string>backups/UNSW_Phd</string>
+            <key>excludes</key>    <array/>
+        </dict>
+        <dict>
+            <key>name</key>        <string>UQ_Phd</string>
+            <key>source</key>      <string>~/UQ_Phd</string>
+            <key>destination</key> <string>backups/UQ_Phd</string>
+            <key>excludes</key>    <array/>
+        </dict>
+        <dict>
+            <key>name</key>        <string>Writing</string>
+            <key>source</key>      <string>~/Writing</string>
+            <key>destination</key> <string>backups/Writing</string>
+            <key>excludes</key>    <array/>
+        </dict>
+        <dict>
+            <key>name</key>        <string>Zotero2</string>
+            <key>source</key>      <string>~/Zotero2</string>
+            <key>destination</key> <string>backups/Zotero2</string>
+            <key>excludes</key>    <array/>
+        </dict>
+    </array>
+
+    <!-- Global excludes applied to every mapping (from scripts/.backup.config RSYNC_IGNORE) -->
+    <key>globalExcludes</key>
+    <array>
+        <string>node_modules</string>
+        <string>bower_components</string>
+        <string>.DS_Store</string>
+        <string>._*</string>
+        <string>.Spotlight-V100</string>
+        <string>.Trashes</string>
+        <string>.fseventsd</string>
+        <string>*.log</string>
+        <string>*.woff</string>
+        <string>*.exml</string>
+        <string>*.tgz</string>
+        <string>*.pack</string>
+        <string>*.jar</string>
+        <string>*.psv</string>
+        <string>*.db</string>
+        <string>*.lock</string>
+        <string>*.cache</string>
+        <string>*.zip</string>
+        <string>*.tar</string>
+        <string>*.gz</string>
+        <string>*.bz2</string>
+        <string>*.xz</string>
+        <string>*.7z</string>
+        <string>*.rar</string>
+        <string>OneDrive</string>
+        <string>*.localized</string>
+        <string>better-bibtex</string>
+        <string>zettelify</string>
     </array>
 </dict>
 </plist>

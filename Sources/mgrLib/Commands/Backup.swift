@@ -132,14 +132,16 @@ public enum Backup {
                   let obj  = try? PropertyListSerialization.propertyList(from: data, format: nil),
                   let dict = obj as? [String: Any] else { continue }
 
-            let pattern  = dict["volumePattern"] as? String ?? "BACKUP"
-            let rawArr   = dict["mappings"] as? [[String: Any]] ?? []
+            let pattern        = dict["volumePattern"]  as? String   ?? "BACKUP"
+            let globalExcludes = dict["globalExcludes"] as? [String] ?? []
+            let rawArr         = dict["mappings"]       as? [[String: Any]] ?? []
             let mappings = rawArr.compactMap { entry -> Mapping? in
                 guard let name = entry["name"]        as? String,
                       let src  = entry["source"]      as? String,
                       let dst  = entry["destination"] as? String else { return nil }
+                let perMapping = entry["excludes"] as? [String] ?? []
                 return Mapping(name: name, source: src, destination: dst,
-                               excludes: entry["excludes"] as? [String] ?? [])
+                               excludes: globalExcludes + perMapping)
             }
             return Config(volumePattern: pattern, mappings: mappings)
         }
