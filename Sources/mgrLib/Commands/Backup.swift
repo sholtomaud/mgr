@@ -43,6 +43,11 @@ public enum Backup {
             let src = (mapping.source as NSString).expandingTildeInPath
             let dst = volumePath + "/" + mapping.destination
 
+            guard FileManager.default.fileExists(atPath: src) else {
+                print("  [skip] \(mapping.name): \(src) does not exist")
+                continue
+            }
+
             if !dryRun {
                 try? FileManager.default.createDirectory(
                     atPath: dst, withIntermediateDirectories: true)
