@@ -1,39 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-    <!-- Base directory for timestamped snapshots. Each run creates a subdir. -->
-    <key>snapshotBase</key>
-    <string>~/Backups/mgr</string>
+<array>
+    <!-- Each entry mirrors a source directory to a destination on an external drive.
+         mgr backup runs: rsync -a --delete [excludes] <source>/ <destination>/
+         The destination is kept as an exact mirror — files deleted on source
+         are also deleted from the backup. Run `mgr backup --dry-run` to preview.
 
-    <!-- Excludes applied to every rsync invocation -->
-    <key>globalExcludes</key>
-    <array>
-        <string>.DS_Store</string>
-        <string>*.tmp</string>
-        <string>*.swp</string>
-        <string>node_modules/</string>
-        <string>.git/</string>
-        <string>*.pyc</string>
-    </array>
-
-    <!-- Sources to back up. Each entry produces one rsync invocation per run. -->
-    <key>sources</key>
-    <array>
-        <!--
-        <dict>
-            <key>path</key>     <string>~/Documents</string>
-            <key>excludes</key> <array/>
-        </dict>
-        <dict>
-            <key>path</key>     <string>~/Development</string>
-            <key>excludes</key>
-            <array>
-                <string>.build/</string>
-                <string>*.o</string>
-            </array>
-        </dict>
-        -->
-    </array>
-</dict>
+    <dict>
+        <key>name</key>        <string>home</string>
+        <key>source</key>      <string>~/</string>
+        <key>destination</key> <string>/Volumes/BackupSSD/home</string>
+        <key>excludes</key>
+        <array>
+            <string>.Trash</string>
+            <string>Library/Caches</string>
+            <string>Library/CloudStorage</string>
+            <string>.build</string>
+            <string>node_modules</string>
+            <string>*.tmp</string>
+            <string>.DS_Store</string>
+        </array>
+    </dict>
+    <dict>
+        <key>name</key>        <string>dev</string>
+        <key>source</key>      <string>~/Development</string>
+        <key>destination</key> <string>/Volumes/BackupSSD/Development</string>
+        <key>excludes</key>
+        <array>
+            <string>.build</string>
+            <string>*.o</string>
+            <string>node_modules</string>
+            <string>.DS_Store</string>
+        </array>
+    </dict>
+    -->
+</array>
 </plist>
