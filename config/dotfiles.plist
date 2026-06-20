@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<array>
+    <!-- Each entry maps a source file (relative to the mgr repo root) to a target symlink path.
+         `mgr bootstrap dotfiles` creates the symlink if absent; skips if already correct;
+         warns and skips if the target exists as a regular file (never overwrites). -->
+    <!--
+    <dict>
+        <key>source</key> <string>dotfiles/.zshrc</string>
+        <key>target</key> <string>~/.zshrc</string>
+    </dict>
+    <dict>
+        <key>source</key> <string>dotfiles/.gitconfig</string>
+        <key>target</key> <string>~/.gitconfig</string>
+    </dict>
+    <dict>
+        <key>source</key> <string>dotfiles/.ssh/config</string>
+        <key>target</key> <string>~/.ssh/config</string>
+    </dict>
+    -->
+</array>
+</plist>
