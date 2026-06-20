@@ -8,8 +8,8 @@ public enum Restore {
             restoreFrom(name: name)
         } else {
             fputs("Usage: mgr restore [--list] [--source <name>]\n", stderr)
-            fputs("  --list           Show configured backup mappings and drive status\n", stderr)
-            fputs("  --source <name>  Restore a named mapping from destination → source\n", stderr)
+            fputs("  --list           Show configured mappings and which drive is mounted\n", stderr)
+            fputs("  --source <name>  Restore a named mapping: backup drive → source\n", stderr)
             exit(1)
         }
     }
@@ -17,18 +17,27 @@ public enum Restore {
     // MARK: — List
 
     private static func listMappings() {
-        let mappings = Backup.readConfig()
-        guard !mappings.isEmpty else {
-            print("restore: no mappings configured in config/backup.plist")
+        let config = Backup.readConfig()
+
+        let volumePath = Backup.findVolume(pattern: config.volumePattern)
+        if let v = volumePath {
+            print("Backup drive: \(v)  ✓ mounted")
+        } else {
+            print("Backup drive: /Volumes/\(config.volumePattern)*  ✗ not mounted")
+        }
+        print("")
+
+        guard !config.mappings.isEmpty else {
+            print("No mappings configured in config/backup.plist")
             return
         }
-        print("Backup mappings:")
-        for m in mappings {
-            let mounted = FileManager.default.fileExists(atPath: m.destination)
-            let status  = mounted ? "✓ mounted" : "✗ not mounted"
+
+        print("Mappings:")
+        for m in config.mappings {
+            let resolvedDst = volumePath.map { $0 + "/" + m.destination } ?? "(drive not mounted)"
             print("  \(m.name)")
             print("    source:      \(m.source)")
-            print("    destination: \(m.destination)  [\(status)]")
+            print("    destination: \(resolvedDst)")
             if !m.excludes.isEmpty {
                 print("    excludes:    \(m.excludes.joined(separator: ", "))")
             }
@@ -38,19 +47,26 @@ public enum Restore {
     // MARK: — Restore
 
     private static func restoreFrom(name: String) {
-        let mappings = Backup.readConfig()
-        guard let mapping = mappings.first(where: { $0.name == name }) else {
+        let config = Backup.readConfig()
+
+        guard let mapping = config.mappings.first(where: { $0.name == name }) else {
             fputs("restore: no mapping named '\(name)'\n", stderr)
             fputs("  Run 'mgr restore --list' to see configured mappings.\n", stderr)
             exit(1)
         }
 
+        guard let volumePath = Backup.findVolume(pattern: config.volumePattern) else {
+            fputs("restore: no backup drive mounted (looking for /Volumes/\(config.volumePattern)*)\n", stderr)
+            fputs("  Plug in one of your backup drives and try again.\n", stderr)
+            exit(1)
+        }
+
         let src = (mapping.source as NSString).expandingTildeInPath
-        let dst = mapping.destination
+        let dst = volumePath + "/" + mapping.destination
 
         guard FileManager.default.fileExists(atPath: dst) else {
-            fputs("restore: destination not found: \(dst)\n", stderr)
-            fputs("  Is the external drive mounted?\n", stderr)
+            fputs("restore: backup directory not found: \(dst)\n", stderr)
+            fputs("  Has '\(name)' been backed up yet? Run: mgr backup \(name)\n", stderr)
             exit(1)
         }
 
@@ -59,7 +75,7 @@ public enum Restore {
         print("  to:   \(src)/")
         print("")
         print("WARNING: This will overwrite \(src) with the contents of the backup.")
-        print("Files on your Mac that don't exist in the backup will be DELETED (rsync --delete).")
+        print("         Files on your Mac not in the backup will be DELETED (rsync --delete).")
         print("")
         print("Type 'yes' to continue, or anything else to abort: ", terminator: "")
 
@@ -82,7 +98,7 @@ public enum Restore {
             if !summary.isEmpty { print(summary) }
             print("restore: done")
             Logger.log(to: "backup.jsonl", message: "restore ok",
-                       extra: ["mapping": name, "from": dst, "to": src])
+                       extra: ["mapping": name, "volume": volumePath])
         } else {
             Logger.error("restore: rsync failed: \(result.stderr)")
             Logger.log(to: "backup.jsonl", level: "error", message: "restore failed",
