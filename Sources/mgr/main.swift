@@ -108,9 +108,11 @@ func printHelp(for command: String? = nil) {
             print("""
             Usage: mgr update [--check|--containers|--self]
 
-              --check       Report available updates without installing
-              --containers  Pull latest approved container image digests
-              --self        Download and install the latest signed mgr binary
+              --check       Report current vs latest version (no install)
+              --self        Download latest signed binary from GitHub Releases,
+                            verify signature, and replace current install
+              --containers  Fetch latest digests for images in config/containers.plist
+                            and update the plist (pins digests, no floating 'latest')
             """)
         default:
             print("No help available for '\(command)'.")
