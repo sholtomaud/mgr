@@ -52,7 +52,7 @@ else
 fi
 
 # Clean build
-rm -f mgr-arm64 mgr-x86_64 mgr mgr.zip
+rm -f mgr-arm64 mgr-x86_64 mgr mgr.zip config.zip
 
 echo "==> Building arm64..."
 swift build -c release --arch arm64
@@ -90,6 +90,11 @@ else
     echo "==> Skipping sign/notarize (--unsigned)"
 fi
 
+echo "==> Packaging config templates..."
+# Zip from inside config/ so files extract flat (not under a config/ subdir)
+(cd config && zip -r ../config.zip .)
+echo "  ✓ config.zip ($(du -sh config.zip | cut -f1))"
+
 echo "==> Creating GitHub release $VERSION..."
 gh release create "$VERSION" \
     --title "mgr $VERSION" \
@@ -97,9 +102,10 @@ gh release create "$VERSION" \
     mgr \
     mgr-arm64 \
     mgr-x86_64 \
+    config.zip \
     scripts/install.sh
 
 echo ""
 echo "Released: https://github.com/sholtomaud/mgr/releases/tag/$VERSION"
 echo "Cleaning up..."
-rm -f mgr-arm64 mgr-x86_64
+rm -f mgr-arm64 mgr-x86_64 config.zip
