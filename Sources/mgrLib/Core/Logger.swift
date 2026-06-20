@@ -1,7 +1,7 @@
 import Foundation
 
 public enum Logger {
-    public static var verbose = CommandLine.arguments.contains("--verbose")
+    nonisolated(unsafe) public static var verbose = CommandLine.arguments.contains("--verbose")
 
     public static func info(_ message: String) {
         print("[mgr] \(message)")

@@ -4,11 +4,11 @@ public enum Monitor {
 
     // Tracks unknowns already notified this session to suppress repeat alerts.
     // Keyed by plist path.
-    private static var notifiedPaths = Set<String>()
+    nonisolated(unsafe) private static var notifiedPaths = Set<String>()
 
     // File descriptor handles for DispatchSource watchers — kept alive for daemon lifetime.
-    private static var watcherFDs: [Int32] = []
-    private static var watcherSources: [DispatchSourceFileSystemObject] = []
+    nonisolated(unsafe) private static var watcherFDs: [Int32] = []
+    nonisolated(unsafe) private static var watcherSources: [DispatchSourceFileSystemObject] = []
 
     public static func run(args: [String]) {
         if args.contains("--start") {

@@ -2,7 +2,7 @@ import Foundation
 
 public enum Notify {
     // Set to true in tests to suppress osascript calls (which open UI in CI).
-    public static var suppressForTesting = false
+    nonisolated(unsafe) public static var suppressForTesting = false
 
     // Sends a macOS notification via osascript — works in user-session LaunchAgents
     // without requiring a bundle identifier or UNUserNotificationCenter authorization.

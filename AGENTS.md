@@ -25,7 +25,7 @@ See [docs/spec.md](docs/spec.md) for the full architecture and functional requir
 
 ## Code style
 
-- Swift 5.9+ with `async/await` where appropriate (prefer sync for CLI commands unless I/O blocks)
+- Swift 6.3+ with `async/await` where appropriate (prefer sync for CLI commands unless I/O blocks)
 - Use `enum` with static methods for command namespaces (matches existing `Bootstrap`, `Doctor`, etc.)
 - Error output goes to `stderr` via `fputs(..., stderr)`, not `print`
 - Exit with non-zero on failure: `exit(1)`

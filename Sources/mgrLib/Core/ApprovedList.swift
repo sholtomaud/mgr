@@ -23,7 +23,7 @@ public struct ApprovedEntry {
 
 public enum ApprovedList {
     // Override for tests. When set, all other resolution is skipped.
-    public static var testPlistPathOverride: String? = nil
+    nonisolated(unsafe) public static var testPlistPathOverride: String? = nil
 
     // Resolution order:
     // 1. testPlistPathOverride (set in test setUp/tearDown)
