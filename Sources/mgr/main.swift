@@ -52,12 +52,12 @@ func printHelp(for command: String? = nil) {
 
             One-time machine setup. Each subcommand is idempotent.
 
-              system    Write macOS defaults, set hostname
-              apps      Download and verify DMGs/PKGs from approved sources
-              packages  Evaluate Brewfile inside container
-              dotfiles  Symlink shell config, git config
-              agents    Register com.mgr.monitor and com.mgr.backup via SMAppService
-              dev       Xcode CLI path, git config, SSH key generation
+              system    Write macOS defaults, set hostname and timezone (config/system.plist)
+              dotfiles  Symlink dotfiles per config/dotfiles.plist (never overwrites regular files)
+              dev       Verify Xcode CLI, apply git config, generate SSH key (config/dev.plist)
+              apps      Download and verify signed DMGs/PKGs from approved sources
+              packages  Evaluate Brewfile (requires container)
+              agents    Install and load com.mgr.monitor and com.mgr.backup LaunchAgents
             """)
         case "doctor":
             print("""

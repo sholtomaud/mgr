@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>git</key>
+    <dict>
+        <!-- Leave empty to skip -->
+        <key>name</key>  <string></string>
+        <key>email</key> <string></string>
+        <!-- GPG signing key fingerprint, or empty to skip -->
+        <key>signingKey</key> <string></string>
+    </dict>
+    <key>ssh</key>
+    <dict>
+        <!-- Key type: ed25519 (recommended) or rsa -->
+        <key>keyType</key>  <string>ed25519</string>
+        <key>keyPath</key>  <string>~/.ssh/id_ed25519</string>
+        <!-- Comment on the key, e.g. user@hostname -->
+        <key>comment</key>  <string></string>
+    </dict>
+</dict>
+</plist>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Leave hostname empty to skip -->
+    <key>hostname</key>
+    <string></string>
+    <!-- IANA timezone identifier, e.g. Australia/Brisbane, America/New_York -->
+    <key>timezone</key>
+    <string></string>
+    <!-- macOS defaults to write. Format: domain → key → value -->
+    <key>defaults</key>
+    <dict>
+        <key>NSGlobalDomain</key>
+        <dict>
+            <key>AppleShowAllExtensions</key>     <true/>
+            <key>NSAutomaticCapitalizationEnabled</key> <false/>
+            <key>NSAutomaticDashSubstitutionEnabled</key> <false/>
+            <key>NSAutomaticQuoteSubstitutionEnabled</key> <false/>
+            <key>KeyRepeat</key>                  <integer>2</integer>
+            <key>InitialKeyRepeat</key>           <integer>15</integer>
+        </dict>
+        <key>com.apple.dock</key>
+        <dict>
+            <key>autohide</key>       <true/>
+            <key>autohide-delay</key> <real>0</real>
+            <key>show-recents</key>   <false/>
+            <key>tilesize</key>       <integer>48</integer>
+        </dict>
+        <key>com.apple.finder</key>
+        <dict>
+            <key>AppleShowAllFiles</key>       <true/>
+            <key>ShowPathbar</key>             <true/>
+            <key>ShowStatusBar</key>           <true/>
+            <key>_FXSortFoldersFirst</key>     <true/>
+            <key>FXDefaultSearchScope</key>    <string>SCcf</string>
+            <key>FXEnableExtensionChangeWarning</key> <false/>
+        </dict>
+        <key>com.apple.screencapture</key>
+        <dict>
+            <key>disable-shadow</key> <true/>
+            <key>type</key>           <string>png</string>
+        </dict>
+        <key>com.apple.Safari</key>
+        <dict>
+            <key>ShowFullURLInSmartSearchField</key> <true/>
+        </dict>
+    </dict>
+</dict>
+</plist>
