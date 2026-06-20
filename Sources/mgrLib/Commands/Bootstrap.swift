@@ -27,25 +27,52 @@ public enum Bootstrap {
     // MARK: — system
 
     static func runSystem() {
-        print("bootstrap/system: applying macOS defaults...")
         let config = configDict("system.plist")
         let defaults = config["defaults"] as? [String: Any] ?? [:]
+        let hostname = config["hostname"] as? String ?? ""
+        let timezone = config["timezone"] as? String ?? ""
+
+        // Build a flat list of pending changes so the user can review before applying
+        var pending: [(domain: String, key: String, value: Any)] = []
+        for (domain, rawKeys) in defaults {
+            guard let keys = rawKeys as? [String: Any] else { continue }
+            for (key, value) in keys {
+                pending.append((domain, key, value))
+            }
+        }
+
+        if pending.isEmpty && hostname.isEmpty && timezone.isEmpty {
+            print("bootstrap/system: nothing configured in config/system.plist — skipping")
+            return
+        }
+
+        // Preview
+        print("bootstrap/system: the following defaults will be written:")
+        for p in pending.sorted(by: { "\($0.domain) \($0.key)" < "\($1.domain) \($1.key)" }) {
+            print("  defaults write \(p.domain) \(p.key) \(p.value)")
+        }
+        if !hostname.isEmpty { print("  scutil --set HostName \(hostname)  (requires sudo)") }
+        if !timezone.isEmpty { print("  systemsetup -settimezone \(timezone)  (requires sudo)") }
+
+        print("")
+        print("Apply these settings? [y/N]: ", terminator: "")
+        guard let input = readLine(), input.lowercased() == "y" else {
+            print("Skipped.")
+            return
+        }
 
         var didChangeDock   = false
         var didChangeFinder = false
 
-        for (domain, rawKeys) in defaults {
-            guard let keys = rawKeys as? [String: Any] else { continue }
-            for (key, value) in keys {
-                let args = defaultsWriteArgs(domain: domain, key: key, value: value)
-                let result = Shell.run("/usr/bin/defaults", args: args)
-                if result.succeeded {
-                    print("  ✓ \(domain) \(key)")
-                    if domain == "com.apple.dock"   { didChangeDock   = true }
-                    if domain == "com.apple.finder" { didChangeFinder = true }
-                } else {
-                    Logger.error("bootstrap/system: defaults write \(domain) \(key): \(result.stderr)")
-                }
+        for p in pending {
+            let args = defaultsWriteArgs(domain: p.domain, key: p.key, value: p.value)
+            let result = Shell.run("/usr/bin/defaults", args: args)
+            if result.succeeded {
+                print("  ✓ \(p.domain) \(p.key)")
+                if p.domain == "com.apple.dock"   { didChangeDock   = true }
+                if p.domain == "com.apple.finder" { didChangeFinder = true }
+            } else {
+                Logger.error("bootstrap/system: defaults write \(p.domain) \(p.key): \(result.stderr)")
             }
         }
 
@@ -53,8 +80,7 @@ public enum Bootstrap {
         if didChangeDock   { Shell.run("/usr/bin/killall", args: ["Dock"])   }
         if didChangeFinder { Shell.run("/usr/bin/killall", args: ["Finder"]) }
 
-        // Hostname — requires sudo; attempt and warn if it fails
-        if let hostname = config["hostname"] as? String, !hostname.isEmpty {
+        if !hostname.isEmpty {
             let r = Shell.run("/usr/sbin/scutil", args: ["--set", "HostName", hostname])
             if r.succeeded {
                 print("  ✓ hostname → \(hostname)")
@@ -63,13 +89,12 @@ public enum Bootstrap {
             }
         }
 
-        // Timezone — requires sudo
-        if let tz = config["timezone"] as? String, !tz.isEmpty {
-            let r = Shell.run("/usr/sbin/systemsetup", args: ["-settimezone", tz])
+        if !timezone.isEmpty {
+            let r = Shell.run("/usr/sbin/systemsetup", args: ["-settimezone", timezone])
             if r.succeeded {
-                print("  ✓ timezone → \(tz)")
+                print("  ✓ timezone → \(timezone)")
             } else {
-                Logger.error("bootstrap/system: timezone requires sudo — run: sudo systemsetup -settimezone \(tz)")
+                Logger.error("bootstrap/system: timezone requires sudo — run: sudo systemsetup -settimezone \(timezone)")
             }
         }
 
@@ -159,7 +184,14 @@ public enum Bootstrap {
         try? fm.createDirectory(atPath: launchAgentsDir, withIntermediateDirectories: true)
 
         installAgent(name: "com.mgr.monitor", dest: "\(launchAgentsDir)/com.mgr.monitor.plist")
-        installAgent(name: "com.mgr.backup",  dest: "\(launchAgentsDir)/com.mgr.backup.plist")
+
+        // Only install the backup agent if at least one source is configured
+        let backupConfig = Backup.readConfig()
+        if backupConfig.sources.isEmpty {
+            print("bootstrap/agents: com.mgr.backup skipped — no sources in config/backup.plist")
+        } else {
+            installAgent(name: "com.mgr.backup", dest: "\(launchAgentsDir)/com.mgr.backup.plist")
+        }
     }
 
     // MARK: — Private helpers

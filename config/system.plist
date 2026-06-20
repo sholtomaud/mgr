@@ -41,10 +41,14 @@
             <key>disable-shadow</key> <true/>
             <key>type</key>           <string>png</string>
         </dict>
+        <!-- com.apple.Safari is sandboxed — writing its prefs requires Full Disk Access.
+             Add entries here only after granting FDA in System Settings → Privacy & Security. -->
+        <!--
         <key>com.apple.Safari</key>
         <dict>
             <key>ShowFullURLInSmartSearchField</key> <true/>
         </dict>
+        -->
     </dict>
 </dict>
 </plist>
