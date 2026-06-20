@@ -63,11 +63,21 @@ public enum Backup {
             print("  [\(mapping.name)] \(mapping.source) → \(dst)")
             let result = Shell.run("/usr/bin/rsync", args: rsyncArgs)
 
-            if result.succeeded {
+            if result.succeeded || result.exitCode == 23 {
+                // exit code 23 = partial transfer due to unreadable files (e.g. Apple-managed
+                // dirs like Music/Music, Movies/TV that need Full Disk Access)
                 let summary = result.stdout.components(separatedBy: "\n")
                     .filter { $0.hasPrefix("Number of") || $0.hasPrefix("Total") || $0.hasPrefix("Sent") }
                     .joined(separator: "\n")
                 if !summary.isEmpty { print(summary) }
+                if result.exitCode == 23 {
+                    let skipped = result.stderr.components(separatedBy: "\n")
+                        .filter { $0.contains("unreadable") || $0.contains("Operation not permitted") }
+                        .joined(separator: "\n")
+                    if !skipped.isEmpty {
+                        print("  [warn] some files skipped (Full Disk Access required):\n\(skipped)")
+                    }
+                }
                 print("  ✓ \(mapping.name)")
             } else {
                 Logger.error("backup: [\(mapping.name)] rsync failed: \(result.stderr)")
