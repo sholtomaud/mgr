@@ -152,13 +152,25 @@ After merging, verify the issue was auto-closed by the `closes #<n>` in the PR. 
 gh issue close <number> --repo sholtomaud/mgr --comment "Completed in PR #<pr-number>."
 ```
 
-### Step 10 — Return to Step 1
+### Step 10 — Sync main and clean up
 
-Pull `main` and pick the next open issue.
+After a squash merge, `origin/main` has a new squash commit but the local `main` and the local feature branch are stale. Run all three steps:
 
 ```sh
-git checkout main && git pull origin main
+git checkout main
+git pull origin main                              # fast-forward to the squash commit
+git branch -d issue/<number>-<short-slug>         # delete the local feature branch
 ```
+
+Then verify `main` is still green before picking the next issue:
+
+```sh
+swift build && swift test
+```
+
+If either fails, do not start the next issue — diagnose and fix on `main` first (direct commit is acceptable for a build-fix, no PR needed).
+
+Return to Step 1.
 
 ---
 
