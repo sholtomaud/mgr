@@ -1,11 +1,14 @@
 name: Build, Sign, and Release
 
+# Signing and notarization happen locally via scripts/release.sh.
+# This workflow only runs on manual dispatch and is here if CI signing is
+# ever set up with GitHub secrets.
 on:
-  push:
-    tags:
-      - 'v*'
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.0)'
+        required: true
 
 jobs:
   build:
@@ -33,7 +36,6 @@ jobs:
     name: Sign, Notarize, and Release
     runs-on: macos-15
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +70,7 @@ jobs:
           codesign --force --deep --strict \
             --sign "$SIGNING_IDENTITY" \
             --options runtime \
+            --timestamp \
             mgr
           codesign --verify --deep --strict --verbose mgr
 
@@ -88,9 +91,10 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.tag }}
+          generate_release_notes: true
           files: |
             mgr
             mgr-arm64/mgr-arm64
             mgr-x86_64/mgr-x86_64
             scripts/install.sh
-          generate_release_notes: true
