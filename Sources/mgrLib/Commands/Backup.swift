@@ -4,60 +4,68 @@ public enum Backup {
     public static func run(args: [String]) {
         let dryRun = args.contains("--dry-run")
         let destOverride = flagValue(args, flag: "--destination")
+        let nameFilter = args.first(where: { !$0.hasPrefix("-") })
 
-        let config = readConfig()
-        let snapshotBase = destOverride ?? config.snapshotBase
+        let mappings = readConfig()
 
-        guard !config.sources.isEmpty else {
-            print("backup: no sources configured in config/backup.plist — nothing to do")
+        guard !mappings.isEmpty else {
+            print("backup: no mappings configured in config/backup.plist — nothing to do")
+            print("  Add source/destination pairs to config/backup.plist to get started.")
             return
         }
 
-        let timestamp = isoTimestamp()
-        let snapshotDir = (snapshotBase as NSString).expandingTildeInPath + "/" + timestamp
-        let fm = FileManager.default
+        let targets = nameFilter != nil
+            ? mappings.filter { $0.name == nameFilter }
+            : mappings
 
-        if !dryRun {
-            do {
-                try fm.createDirectory(atPath: snapshotDir, withIntermediateDirectories: true)
-            } catch {
-                Logger.error("backup: failed to create snapshot dir \(snapshotDir): \(error.localizedDescription)")
-                return
-            }
+        if targets.isEmpty {
+            Logger.error("backup: no mapping named '\(nameFilter!)' — run 'mgr backup' to see all")
+            exit(1)
         }
 
         let startDate = Date()
-        print("backup: starting snapshot \(timestamp)\(dryRun ? " (dry run)" : "")")
+        print("backup: starting\(dryRun ? " (dry run)" : "")")
 
         var anyFailure = false
-        var sourceResults: [[String: String]] = []
 
-        for source in config.sources {
-            let expanded = (source.path as NSString).expandingTildeInPath
-            let basename = (expanded as NSString).lastPathComponent
-            let dest = snapshotDir + "/" + basename
+        for mapping in targets {
+            let src = (mapping.source as NSString).expandingTildeInPath
+            let dst = destOverride ?? mapping.destination
 
-            if !dryRun {
-                try? fm.createDirectory(atPath: dest, withIntermediateDirectories: true)
+            // Warn clearly if the destination drive isn't mounted
+            guard FileManager.default.fileExists(atPath: dst) ||
+                  FileManager.default.fileExists(atPath: (dst as NSString).deletingLastPathComponent) else {
+                Logger.error("backup: destination not reachable: \(dst)")
+                Logger.error("  Is the external drive mounted?")
+                anyFailure = true
+                continue
             }
 
-            var rsyncArgs = ["-a", "--stats"]
+            // Ensure destination directory exists
+            if !dryRun {
+                try? FileManager.default.createDirectory(
+                    atPath: dst, withIntermediateDirectories: true)
+            }
+
+            var rsyncArgs = ["-a", "--delete", "--stats"]
             if dryRun { rsyncArgs.append("--dry-run") }
-            for ex in config.globalExcludes + source.excludes {
+            for ex in mapping.excludes {
                 rsyncArgs += ["--exclude", ex]
             }
-            // Trailing slash on source copies contents, not the dir itself
-            rsyncArgs += [expanded + "/", dest + "/"]
+            rsyncArgs += [src + "/", dst + "/"]
 
-            print("  \(expanded) → \(dest)")
+            print("  [\(mapping.name)] \(mapping.source) → \(dst)")
             let result = Shell.run("/usr/bin/rsync", args: rsyncArgs)
 
             if result.succeeded {
-                if !result.stdout.isEmpty { print(result.stdout) }
-                sourceResults.append(["source": source.path, "dest": dest, "status": "ok"])
+                // Print the summary lines rsync produces (transferred, size, etc.)
+                let summary = result.stdout.components(separatedBy: "\n")
+                    .filter { $0.hasPrefix("Number of") || $0.hasPrefix("Total") || $0.hasPrefix("Sent") }
+                    .joined(separator: "\n")
+                if !summary.isEmpty { print(summary) }
+                print("  ✓ \(mapping.name)")
             } else {
-                Logger.error("backup: rsync failed for \(source.path): \(result.stderr)")
-                sourceResults.append(["source": source.path, "dest": dest, "status": "failed"])
+                Logger.error("backup: [\(mapping.name)] rsync failed: \(result.stderr)")
                 anyFailure = true
             }
         }
@@ -66,21 +74,19 @@ public enum Backup {
         let status = anyFailure ? "partial" : "ok"
 
         if !dryRun {
-            writeManifest(snapshotDir: snapshotDir, sources: config.sources, timestamp: timestamp)
             Logger.log(
                 to: "backup.jsonl",
                 level: anyFailure ? "error" : "info",
                 message: "backup \(status)",
                 extra: [
-                    "snapshotDir": snapshotDir,
-                    "duration":    duration + "s",
-                    "status":      status,
-                    "sources":     String(config.sources.count)
+                    "mappings": String(targets.count),
+                    "duration": duration + "s",
+                    "status":   status
                 ]
             )
             Notify.send(
                 title: anyFailure ? "Backup partially failed" : "Backup complete",
-                body:  "\(config.sources.count) source(s) in \(duration)s → \(snapshotDir)"
+                body:  "\(targets.count) mapping(s) in \(duration)s"
             )
         }
 
@@ -89,74 +95,36 @@ public enum Backup {
 
     // MARK: — Config
 
-    struct BackupConfig {
-        let snapshotBase:   String
-        let globalExcludes: [String]
-        let sources:        [SourceEntry]
+    public struct Mapping {
+        public let name:        String
+        public let source:      String
+        public let destination: String
+        public let excludes:    [String]
     }
 
-    struct SourceEntry {
-        let path:     String
-        let excludes: [String]
-    }
-
-    static func readConfig() -> BackupConfig {
+    public static func readConfig() -> [Mapping] {
         let paths = [
             "./config/backup.plist",
             FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent(".config/mgr/backup.plist").path
         ]
         for path in paths {
-            guard let dict = Plist.read(at: path) else { continue }
-            let snapshotBase   = dict["snapshotBase"]   as? String ?? "~/Backups/mgr"
-            let globalExcludes = dict["globalExcludes"] as? [String] ?? []
-            let rawSources     = dict["sources"]        as? [[String: Any]] ?? []
-            let sources = rawSources.compactMap { entry -> SourceEntry? in
-                guard let path = entry["path"] as? String else { return nil }
+            guard FileManager.default.fileExists(atPath: path),
+                  let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+                  let obj  = try? PropertyListSerialization.propertyList(from: data, format: nil),
+                  let arr  = obj as? [[String: Any]] else { continue }
+            return arr.compactMap { entry -> Mapping? in
+                guard let name = entry["name"]        as? String,
+                      let src  = entry["source"]      as? String,
+                      let dst  = entry["destination"] as? String else { return nil }
                 let excludes = entry["excludes"] as? [String] ?? []
-                return SourceEntry(path: path, excludes: excludes)
+                return Mapping(name: name, source: src, destination: dst, excludes: excludes)
             }
-            return BackupConfig(snapshotBase: snapshotBase, globalExcludes: globalExcludes, sources: sources)
         }
-        return BackupConfig(snapshotBase: "~/Backups/mgr", globalExcludes: [], sources: [])
-    }
-
-    // MARK: — Manifest
-
-    private static func writeManifest(snapshotDir: String, sources: [SourceEntry], timestamp: String) {
-        let entries = sources.map { ["path": $0.path, "excludes": $0.excludes] }
-        let manifest: [String: Any] = [
-            "timestamp": timestamp,
-            "createdAt": ISO8601DateFormatter().string(from: Date()),
-            "sources":   entries
-        ]
-        guard let data = try? JSONSerialization.data(withJSONObject: manifest, options: .prettyPrinted) else { return }
-        let path = snapshotDir + "/manifest.json"
-        try? data.write(to: URL(fileURLWithPath: path))
+        return []
     }
 
     // MARK: — Helpers
-
-    public static func listSnapshots(base: String) -> [String] {
-        let expanded = (base as NSString).expandingTildeInPath
-        let fm = FileManager.default
-        guard let entries = try? fm.contentsOfDirectory(atPath: expanded) else { return [] }
-        return entries
-            .filter { name in
-                var isDir: ObjCBool = false
-                fm.fileExists(atPath: expanded + "/" + name, isDirectory: &isDir)
-                return isDir.boolValue && name != ".DS_Store"
-            }
-            .sorted()
-            .reversed()
-            .map { expanded + "/" + $0 }
-    }
-
-    private static func isoTimestamp() -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd_HHmmss"
-        return f.string(from: Date())
-    }
 
     private static func flagValue(_ args: [String], flag: String) -> String? {
         guard let idx = args.firstIndex(of: flag) else { return nil }

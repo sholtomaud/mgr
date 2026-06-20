@@ -3,120 +3,95 @@ import Foundation
 public enum Restore {
     public static func run(args: [String]) {
         if args.contains("--list") {
-            listSnapshots()
-        } else if let sourcePath = flagValue(args, flag: "--source") {
-            restoreFrom(sourcePath)
+            listMappings()
+        } else if let name = flagValue(args, flag: "--source") {
+            restoreFrom(name: name)
         } else {
-            fputs("Usage: mgr restore [--list] [--source <snapshot-path>]\n", stderr)
+            fputs("Usage: mgr restore [--list] [--source <name>]\n", stderr)
+            fputs("  --list           Show configured backup mappings and drive status\n", stderr)
+            fputs("  --source <name>  Restore a named mapping from destination → source\n", stderr)
             exit(1)
         }
     }
 
     // MARK: — List
 
-    private static func listSnapshots() {
-        let config = Backup.readConfig()
-        let snapshots = Backup.listSnapshots(base: config.snapshotBase)
-        if snapshots.isEmpty {
-            print("restore: no snapshots found at \(config.snapshotBase)")
+    private static func listMappings() {
+        let mappings = Backup.readConfig()
+        guard !mappings.isEmpty else {
+            print("restore: no mappings configured in config/backup.plist")
             return
         }
-        print("Snapshots at \((config.snapshotBase as NSString).expandingTildeInPath):")
-        for path in snapshots {
-            let name = (path as NSString).lastPathComponent
-            // Show source names from manifest if available
-            if let manifest = readManifest(snapshotDir: path),
-               let sources = manifest["sources"] as? [[String: Any]] {
-                let sourceNames = sources.compactMap { $0["path"] as? String }.joined(separator: ", ")
-                print("  \(name)  [\(sourceNames)]")
-            } else {
-                print("  \(name)")
+        print("Backup mappings:")
+        for m in mappings {
+            let mounted = FileManager.default.fileExists(atPath: m.destination)
+            let status  = mounted ? "✓ mounted" : "✗ not mounted"
+            print("  \(m.name)")
+            print("    source:      \(m.source)")
+            print("    destination: \(m.destination)  [\(status)]")
+            if !m.excludes.isEmpty {
+                print("    excludes:    \(m.excludes.joined(separator: ", "))")
             }
         }
     }
 
     // MARK: — Restore
 
-    private static func restoreFrom(_ snapshotPath: String) {
-        let expandedPath = (snapshotPath as NSString).expandingTildeInPath
-        let fm = FileManager.default
-
-        guard fm.fileExists(atPath: expandedPath) else {
-            fputs("restore: snapshot not found: \(expandedPath)\n", stderr)
+    private static func restoreFrom(name: String) {
+        let mappings = Backup.readConfig()
+        guard let mapping = mappings.first(where: { $0.name == name }) else {
+            fputs("restore: no mapping named '\(name)'\n", stderr)
+            fputs("  Run 'mgr restore --list' to see configured mappings.\n", stderr)
             exit(1)
         }
 
-        let manifest = readManifest(snapshotDir: expandedPath)
-        let sources = (manifest?["sources"] as? [[String: Any]] ?? [])
-            .compactMap { $0["path"] as? String }
+        let src = (mapping.source as NSString).expandingTildeInPath
+        let dst = mapping.destination
 
-        // Enumerate what's in the snapshot dir
-        let entries = (try? fm.contentsOfDirectory(atPath: expandedPath)) ?? []
-        let restorableDirs = entries.filter { name in
-            guard name != "manifest.json" else { return false }
-            var isDir: ObjCBool = false
-            fm.fileExists(atPath: expandedPath + "/" + name, isDirectory: &isDir)
-            return isDir.boolValue
-        }.sorted()
-
-        guard !restorableDirs.isEmpty else {
-            print("restore: snapshot contains no source directories")
-            return
+        guard FileManager.default.fileExists(atPath: dst) else {
+            fputs("restore: destination not found: \(dst)\n", stderr)
+            fputs("  Is the external drive mounted?\n", stderr)
+            exit(1)
         }
 
-        print("Restore from: \(expandedPath)")
-        print("Will restore:")
-        for dir in restorableDirs {
-            // Try to find original path from manifest
-            let originalPath = sources.first { ($0 as NSString).lastPathComponent == dir }
-                ?? "~/" + dir
-            print("  \(expandedPath)/\(dir)/ → \((originalPath as NSString).expandingTildeInPath)/")
-        }
+        print("Restore '\(name)':")
+        print("  from: \(dst)/")
+        print("  to:   \(src)/")
+        print("")
+        print("WARNING: This will overwrite \(src) with the contents of the backup.")
+        print("Files on your Mac that don't exist in the backup will be DELETED (rsync --delete).")
+        print("")
+        print("Type 'yes' to continue, or anything else to abort: ", terminator: "")
 
-        print("\nType 'yes' to continue, or anything else to abort: ", terminator: "")
         guard let input = readLine(), input.lowercased() == "yes" else {
             print("Aborted.")
             return
         }
 
-        var anyFailure = false
-        for dir in restorableDirs {
-            let originalPath = sources.first { ($0 as NSString).lastPathComponent == dir }
-                ?? "~/" + dir
-            let expanded = (originalPath as NSString).expandingTildeInPath
-            try? fm.createDirectory(atPath: expanded, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(atPath: src, withIntermediateDirectories: true)
 
-            let result = Shell.run("/usr/bin/rsync", args: [
-                "-a", "--stats",
-                expandedPath + "/" + dir + "/",
-                expanded + "/"
-            ])
-            if result.succeeded {
-                print("  ✓ \(dir) → \(expanded)")
-            } else {
-                Logger.error("restore: rsync failed for \(dir): \(result.stderr)")
-                anyFailure = true
-            }
+        let result = Shell.run("/usr/bin/rsync", args: [
+            "-a", "--delete", "--stats",
+            dst + "/", src + "/"
+        ])
+
+        if result.succeeded {
+            let summary = result.stdout.components(separatedBy: "\n")
+                .filter { $0.hasPrefix("Number of") || $0.hasPrefix("Total") }
+                .joined(separator: "\n")
+            if !summary.isEmpty { print(summary) }
+            print("restore: done")
+            Logger.log(to: "backup.jsonl", message: "restore ok",
+                       extra: ["mapping": name, "from": dst, "to": src])
+        } else {
+            Logger.error("restore: rsync failed: \(result.stderr)")
+            Logger.log(to: "backup.jsonl", level: "error", message: "restore failed",
+                       extra: ["mapping": name])
+            exit(1)
         }
-
-        Logger.log(
-            to: "backup.jsonl",
-            level: anyFailure ? "error" : "info",
-            message: anyFailure ? "restore partial" : "restore ok",
-            extra: ["snapshotDir": expandedPath]
-        )
-        print(anyFailure ? "restore: completed with errors" : "restore: done")
     }
 
     // MARK: — Helpers
-
-    private static func readManifest(snapshotDir: String) -> [String: Any]? {
-        let path = snapshotDir + "/manifest.json"
-        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
-              let obj = try? JSONSerialization.jsonObject(with: data),
-              let dict = obj as? [String: Any] else { return nil }
-        return dict
-    }
 
     private static func flagValue(_ args: [String], flag: String) -> String? {
         guard let idx = args.firstIndex(of: flag) else { return nil }

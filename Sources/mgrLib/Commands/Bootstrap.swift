@@ -187,7 +187,7 @@ public enum Bootstrap {
 
         // Only install the backup agent if at least one source is configured
         let backupConfig = Backup.readConfig()
-        if backupConfig.sources.isEmpty {
+        if backupConfig.isEmpty {
             print("bootstrap/agents: com.mgr.backup skipped — no sources in config/backup.plist")
         } else {
             installAgent(name: "com.mgr.backup", dest: "\(launchAgentsDir)/com.mgr.backup.plist")
