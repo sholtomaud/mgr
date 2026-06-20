@@ -1,0 +1,38 @@
+# Swift build artifacts
+.build/
+*.o
+*.d
+*.swp
+*.lock
+*.xcodeproj/
+xcuserdata/
+
+# Xcode
+*.xcworkspace
+*.xcodeproj
+DerivedData/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+*.dmg
+*.pkg
+
+# Secrets / local config overrides
+config/local/
+*.p12
+*.cer
+*.pem
+config/approved.plist.local
+
+# VSCode
+.vscode/settings.json.local
+
+# Logs
+*.jsonl

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>settings</key>
+    <dict>
+        <key>monitorInterval</key>
+        <integer>60</integer>
+        <key>autoQuarantine</key>
+        <false/>
+        <key>logPath</key>
+        <string>~/Library/Logs/mgr/monitor.jsonl</string>
+    </dict>
+    <key>approved</key>
+    <array>
+        <!-- Entries are written by `mgr approve <pid|path|name>` -->
+        <!-- Example entry:
+        <dict>
+            <key>name</key>        <string>example-mcp</string>
+            <key>path</key>        <string>/usr/local/bin/example-mcp</string>
+            <key>teamID</key>      <string>XXXXXXXXXX</string>
+            <key>sha256</key>      <string>sha256:...</string>
+            <key>approvedBy</key>  <string>sholto</string>
+            <key>approvedAt</key>  <string>2026-01-01T00:00:00Z</string>
+        </dict>
+        -->
+    </array>
+</dict>
+</plist>

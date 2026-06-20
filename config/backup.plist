@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<array>
+    <!-- Example backup mapping. Edit to match your drives.
+    <dict>
+        <key>name</key>
+        <string>home</string>
+        <key>source</key>
+        <string>~/</string>
+        <key>destination</key>
+        <string>/Volumes/Backup/home</string>
+        <key>excludes</key>
+        <array>
+            <string>.Trash</string>
+            <string>Library/Caches</string>
+            <string>.build</string>
+        </array>
+    </dict>
+    -->
+</array>
+</plist>

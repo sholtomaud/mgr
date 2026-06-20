@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Container image digests. Updated by `mgr update --containers`. No floating `latest` tags. -->
+    <!--
+    <key>latex</key>
+    <dict>
+        <key>image</key>  <string>ghcr.io/sholtomaud/container-latex</string>
+        <key>digest</key> <string>sha256:</string>
+    </dict>
+    <key>node-ai</key>
+    <dict>
+        <key>image</key>  <string>ghcr.io/sholtomaud/container-node-ai</string>
+        <key>digest</key> <string>sha256:</string>
+    </dict>
+    <key>python</key>
+    <dict>
+        <key>image</key>  <string>ghcr.io/sholtomaud/container-python</string>
+        <key>digest</key> <string>sha256:</string>
+    </dict>
+    -->
+</dict>
+</plist>
